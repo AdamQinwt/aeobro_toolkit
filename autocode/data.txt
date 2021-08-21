@@ -1,0 +1,234 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"strconv"
+)
+
+const (
+	table{$gname}Name = "{$glower}"
+
+	//fields
+	fid="id"
+	$list for field defines
+	$all
+	$middle
+	f{$lower}="{$lower}"
+	$endall
+
+	VoidString = "&"
+	VoidInt    = -1
+)
+
+type {$gname} struct {
+	Id int `json:"Id"`
+	$list for struct defines
+	$float
+	{$name} float64 `json:"{$name}"`
+	$int
+	{$name} int `json:"{$name}"`
+	$text
+	{$name} string `json:"{$name}"`
+	$endlist
+}
+
+func DropTable{$gname}() error {
+	q := "Drop TABLE " + table{$gname}Name + "  ;"
+	//fmt.Println(q)
+	return Execute(q)
+}
+
+func CreateTable{$gname}() error {
+	q := "CREATE TABLE if not exists " + table{$gname}Name + " ("
+	$list for create
+	$float
+	q += f{$lower} + " {$type}, "
+	$int
+	q += f{$lower} + " {$type}, "
+	$text
+	q += f{$lower} + " {$type}, "
+	$endlist
+	q += "id INTEGER primary key auto_increment);"
+	return Execute(q)
+}
+
+func RTOA{$gname}(r Record) []{$gname} {
+	result := make([]{$gname}, 0, 5)
+	for _, v := range r {
+		$list for rtoa_pre
+		$float
+		{$lower}, _ := strconv.ParseFloat(v[f{$lower}], 64)
+		$int
+		{$lower}, _ := strconv.ParseInt(v[f{$lower}], 10, 32)
+		$text
+		$endlist
+		id, _ := strconv.ParseInt(v[fid], 10, 32)
+		result = append(result, {$gname}{
+			$list for rtoa
+			$float
+			{$name}:   float64({$lower}),
+			$int
+			{$name}:    int({$lower}),
+			$text
+			{$name}:   v[f{$lower}],
+			$endlist
+			Id:    int(id),
+		})
+	}
+	return result
+}
+
+func FindAll{$gname}() []{$gname} {
+	q := "select * from " + table{$gname}Name
+	//fmt.Println(q)
+	r := GetRecord(q)
+	//fmt.Println(r)
+	c := RTOA{$gname}(r)
+
+	if len(c) != 0 {
+		return c
+	} else {
+		return nil
+	}
+}
+
+func {$gname}ToJSON(u []{$gname}) []byte {
+	jsonFile, err := os.Create("post.json")
+	if err != nil {
+		fmt.Println("Error creating JSON file:", err)
+		return nil
+	}
+	defer jsonFile.Close()
+	jsonWriter := io.Writer(jsonFile)
+	encoder := json.NewEncoder(jsonWriter)
+	err = encoder.Encode(&u)
+	if err != nil {
+		fmt.Println("Error encoding JSON to file:", err)
+		return nil
+	}
+	return nil
+}
+
+func ({$glower} *{$gname}) ToJSON() []byte {
+	output, err := json.Marshal(&{$glower})
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+	return output
+}
+
+func ({$glower} *{$gname}) Ins{$gname}() error {
+	q := "Insert into " + table{$gname}Name
+	q += " ( "
+	$all for insert
+	$middle
+	q += f{$lower} + " , "
+	$last
+	q += f{$lower}
+	$endall
+	q += " ) values("
+	$list for insert
+	$float
+	q += strconv.FormatFloat({$glower}.{$name}, 'E', -1, 32) + ","
+	$int
+	q += strconv.Itoa({$glower}.{$name})+ ","
+	$text
+	q += "'" + {$glower}.{$name} + "'" + ","
+	$f_float
+	q += strconv.FormatFloat({$glower}.{$name}, 'E', -1, 32)
+	$f_int
+	q += strconv.Itoa({$glower}.{$name})
+	$f_text
+	q += "'" + {$glower}.{$name} + "'"
+	$endlist
+	q += ")"
+	//fmt.Println(q)
+	err := Execute(q)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func Del{$gname}(id int) error {
+	err := Execute("delete from " + table{$gname}Name + " where Id = " + strconv.Itoa(id))
+	return err
+}
+
+func Get{$gname}ById(id int) {$gname} {
+	q := "select * from " + table{$gname}Name
+	q += " where " + fid + " = " + strconv.Itoa(id) + ""
+	//fmt.Println(q)
+	r := GetRecord(q)
+	//fmt.Println(r)
+	c := RTOA{$gname}(r)
+
+	if len(c) != 0 {
+		return c[0]
+	} else {
+		return {$gname}{
+			Id: id,
+		}
+	}
+}
+
+func ({$glower} *{$gname}) Filter() []{$gname} {
+	//check input
+	q := "select * from " + table{$gname}Name + " where "
+	flag := true //true if is first
+
+	//id
+	if {$glower}.Id != VoidInt {
+		if !flag {
+			q += " and "
+		} else {
+			flag = false
+		}
+		q += fid + " = " + strconv.Itoa({$glower}.Id)
+	}
+	$list
+	$text
+	//{$lower}
+	if {$glower}.{$name} != VoidString {
+		if !flag {
+			q += " and "
+		} else {
+			flag = false
+		}
+		q += "("
+		q += f{$lower} + "  like "
+		q += "'" + {$glower}.{$name} + "%'"
+		q += " or " + f{$lower} + "  like '%" + {$glower}.{$name} + "' "
+		q += " or " + f{$lower} + "  like '%" + {$glower}.{$name} + "%') "
+	}
+	$int
+	//{$lower}
+	if {$glower}.{$name} != VoidInt {
+		if !flag {
+			q += " and "
+		} else {
+			flag = false
+		}
+		q += f{$lower} + " = " + strconv.Itoa({$glower}.{$name})
+	}
+	$float
+	//{$lower} is not filtered
+	$endlist
+
+	
+	if flag {
+		q = "select * from " + table{$gname}Name
+	}
+
+	fmt.Println(q)
+	c := RTOA{$gname}(GetRecord(q))
+	if len(c) != 0 {
+		return c
+	} else {
+		return nil
+	}
+}

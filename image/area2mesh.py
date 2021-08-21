@@ -1,6 +1,4 @@
 import numpy as np
-from random import randint
-from nntrainer.trainer.max_min_stat import MinRecord
 import cv2
 from skimage.measure import marching_cubes_classic,marching_cubes_lewiner
 
@@ -8,15 +6,17 @@ def euclidean(a,b):
     '''Distance'''
     return ((a[0]-b[0])**2)+((a[1]-b[1])**2)
 
-def area2mesh2(area):
+def area2mesh2(area,*args,**kwargs):
     '''
     convert an area to mesh with marching cubes
     :param area: 2D(h*w) array of foreground/background flags. 0 for background and non-0 for foreground
+    :param args: Extra arguments may include level, spacing, gradient_direction
+    :param kwargs: Extra arguments may include level, spacing, gradient_direction
     :return: (vertex,face) that make a mesh which looks like the area.
     '''
     zero=np.zeros(area.shape)
-    area=np.array(np.stack([zero]+[area]+[zero],0),dtype=np.float)
-    res = marching_cubes_classic(area,.1,spacing=(.01,.01,.01))
+    area=np.array(np.stack([zero,area,zero],0),dtype=np.float)
+    res = marching_cubes_classic(area,*args,**kwargs)
     return res
 
 def enumerable2string(enu,split=' '):
@@ -46,9 +46,16 @@ def writemesh(mesh,fname):
             for itm in vmain:
                 fout.write(f'{enumerable2string(itm)}\n')
 
-def gen_area(filename,func_isforeground):
+def gen_area(filename,func_isforeground=lambda x:x<254):
+    '''
+    Generate an area flag with 4-direction scanning.
+    Note that 4-direction scanning may result in inaccurate area estimations in many cases.
+    :param filename: source  image file
+    :param func_isforeground: A function to tell whether a pixel is foreground. The function should take a number(int/byte/float) as input and output a flag showing whether the pixel belongs to the foreground.
+    :return: an array of True/False flags.
+    '''
     img = cv2.imread(filename)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)<254
+    gray = func_isforeground(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
     up=scan_up(gray)
     down=scan_down(gray)
     left=scan_left(gray)

@@ -1,0 +1,11 @@
+# $ lines mean global definitions.
+$gname=Exps
+$glower=exps
+# | lines are data lists.
+Uniq|text
+Cfg|text
+Acc|float
+Time|int
+Epoch|int
+Model|text
+More|text

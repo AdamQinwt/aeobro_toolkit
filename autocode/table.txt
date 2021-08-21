@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width , initial-scale=1.0 , user-scalable=0 , minimum-scale=1.0 , maximum-scale=1.0" />
+    <title>{$gname}</title>
+    <link rel="stylesheet" type="text/css" href="../css/bordered.css" />
+    <script src="../js/ajaxtest.js"></script>
+    <script src="../js/jquery_1.10.2_jquery.min.js"></script>
+    <script>
+        function show1(s) {
+            var list = JSON.parse(s);
+            show(list);
+        }
+        function show(c) {
+            //alert(c.length);
+            var table = document.getElementById("{$glower}_body");
+            document.getElementById("{$glower}_body").innerHTML = "";
+		if (c == null) return;
+            //alert(c.length);
+            for (var i = 0; i < c.length; i++) {
+                var id;
+                var info = c[i];
+                //id = info.Id;
+                var row = table.insertRow();
+                var col1 = row.insertCell();
+                col1.innerHTML = info.Id;
+                id = info.Id;
+                $all
+                $middle
+                col1 = row.insertCell();
+                col1.innerHTML = info.{$name};
+                $endall
+                col1 = row.insertCell();
+                col1.innerHTML = '<a href="/info?id=' + id + '">details<\a>';
+                col1 = row.insertCell();
+                col1.innerHTML = '<a href="/del?id=' + id + '">drop<\a>';
+            }
+        }
+        
+        function filter_{$glower}() {
+            filter = new Object;
+            var t;
+
+            t = document.getElementById("filter_id").value;
+            if (t == "") {
+                filter.Id = -1;
+            }
+            else filter.Id = parseInt(t, 10);
+
+            $list
+            $text
+            t = document.getElementById("filter_{$lower}").value;
+            if (t == "") {
+                filter.{$name} = "&";
+            }
+            else filter.{$name} = t;
+            $int
+            t = document.getElementById("filter_{$lower}").value;
+            if (t == "") {
+                filter.{$name} = -1;
+            }
+            else filter.{$name} = parseInt(t, 10);
+            $float
+            filter.{$name} = -1;
+            $endlist
+            //alert(JSON.stringify(filter));
+            ajaxPost("/filter", JSON.stringify(filter), show1, afailure, afailure);
+            //alert('success');
+        }
+        function show_filter_input() {
+            var value = document.getElementById("filter_input").style.visibility;
+            if (value == "hidden") {
+                document.getElementById("filter_input").style.visibility = "visible";
+            }
+            else
+                document.getElementById("filter_input").style.visibility = "hidden";
+        }
+        $(document).ready(function () {
+            var filters;
+            //alert("2");
+            $.get("/all", function (data, status) {
+                // alert("data: " + data + "\nstatus: " + status);
+                show(data);
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <label style="text-align:center">info</label><br />
+    <table class="bordered" id="{$glower}">
+        <thead>
+            <tr>
+                <th style="width:100px;text-align:center">id</th>
+                $all
+                $middle
+                <th style="text-align:center">{$name}</th>
+                $endall
+                <th style="text-align:center">details</th>
+                <th style="text-align:center">Drop</th>
+            </tr>
+        </thead>
+        <tbody id="{$glower}_body">
+        </tbody>
+    </table>
+
+
+    <div class="filter_div" style="visibility:visible">
+        <button onClick="show_filter_input()">Fiters</button>
+        <div id="filter_input" style="visibility:hidden">
+            id:<input style="text-align:center" id="filter_id" type="text" /><br />
+            $all
+            $middle
+            {$name}:<input style="text-align:center" id="filter_{$lower}" type="text" /><br />
+            $endall
+            <input type="button" id="filter_confirm" onclick="filter_{$glower}()" value="Confirm"><br />
+        </div>
+    </div>
+</body>
+</html>

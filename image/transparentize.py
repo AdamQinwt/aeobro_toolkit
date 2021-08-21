@@ -8,7 +8,7 @@ def transparentize(in_name,out_name,a,is_background=None):
     :param in_name: name of the source picture
     :param out_name: name of the target picture
     :param a: alpha.0(totally transparent)-1(non-transparent)
-    :param is_background: * a function to tell whether a pixel is background(with pixel as input)
+    :param is_background: * a function to tell whether a pixel is background(with pixel as input) E.g. IsColor can be used to create a family of such functions.
     :return:
     '''
     pic=cv2.imread(in_name,cv2.IMREAD_UNCHANGED)
@@ -31,6 +31,3 @@ class IsColor:
             if c!=pix[i]:
                 return False
         return True
-
-if __name__=='__main__':
-    transparentize('t6.bmp','t6_transparent.png',.7,IsColor((255,255,255)))
