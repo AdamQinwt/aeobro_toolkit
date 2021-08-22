@@ -6,9 +6,10 @@ def euclidean(a,b):
     '''Distance'''
     return ((a[0]-b[0])**2)+((a[1]-b[1])**2)
 
-def area2mesh2(area,*args,**kwargs):
+def area2mesh2_classic(area,*args,**kwargs):
     '''
-    convert an area to mesh with marching cubes
+    convert an area to mesh with marching cubes with classic
+    DEPRECATED!!
     area2mesh_postprocess strongly recommended!!!
     :param area: 2D(h*w) array of foreground/background flags. 0 for background and non-0 for foreground
     :param args: Extra arguments may include level, spacing, gradient_direction
@@ -20,17 +21,38 @@ def area2mesh2(area,*args,**kwargs):
     res = marching_cubes_classic(area,*args,**kwargs)
     return res
 
-def area2mesh_postprocess(res,axis=0,thresh=.01):
+def area2mesh2(area,*args,**kwargs):
+    '''
+    convert an area to mesh with marching cubes
+    area2mesh_postprocess strongly recommended!!!
+    :param area: 2D(h*w) array of foreground/background flags. 0 for background and non-0 for foreground
+    :param args: Extra arguments may include level, spacing, gradient_direction, step_size, allow_degenerate
+    :param kwargs: Extra arguments may include level, spacing, gradient_direction, step_size, allow_degenerate
+    :return: (vertex,face,vertex normal,local maximum) that make a mesh which looks like the area.
+    '''
+    zero=np.zeros(area.shape)
+    area=np.array(np.stack([zero,area,zero],0),dtype=np.float)
+    res = marching_cubes_lewiner(area,*args,**kwargs)
+    return res
+
+def area2mesh_postprocess(res,axis=0,thresh=.01,is_short=False):
     '''
     area2mesh2 outputs a closed mesh, and this function turns into a single plane.
     :param res: a closed mesh made up of vertices and faces(in np arrays)
     :param axis: index of eliminated axis. Could change if you change the axis(in the np.stack line in area2mesh2).
     :param thresh: Threshold of the value on the axis. Only SMALLER ones are reserved.
-    :return:
+    :param is_short: whether the res is short(vertices,faces) or not(vertices,faces,normals,local maxima)
+    :return: short(vertices,faces) or not(vertices,faces,normals,local maxima) of the processed version
     '''
-    v,f=res
+    if is_short:
+        v,f=res
+    else:
+        v, f, vn, val = res
     mask = v[:, axis] < thresh
     v0 = v[mask]
+    if not is_short:
+        vn0=vn[mask]
+        val0=val[mask]
     v0[:, axis] = 0
     print(f'Points left: {v0.shape}')
     remap_idx = {}
@@ -46,7 +68,7 @@ def area2mesh_postprocess(res,axis=0,thresh=.01):
         if flag:
             newf.append([remap_idx[a], remap_idx[b], remap_idx[c]])
     f0 = np.array(newf, dtype=np.int)
-    return v0,f0
+    return (v0,f0) if is_short else (v0,f0,vn0,val0)
 
 def enumerable2string(enu,split=' '):
     '''
@@ -131,6 +153,6 @@ def scan_right(a):
 if __name__=='__main__':
     area=gen_area('t6.bmp')
     res=area2mesh2(area)
-    print(res)
-    v,f=res
-    writemesh({'v':-v,'f':f+1},'front.obj')
+    res=area2mesh_postprocess(res)
+    v,f,vn,val=res
+    writemesh({'v':v,'vn':vn,'f':f+1},'mesh.obj')
