@@ -9,6 +9,7 @@ def euclidean(a,b):
 def area2mesh2(area,*args,**kwargs):
     '''
     convert an area to mesh with marching cubes
+    area2mesh_postprocess strongly recommended!!!
     :param area: 2D(h*w) array of foreground/background flags. 0 for background and non-0 for foreground
     :param args: Extra arguments may include level, spacing, gradient_direction
     :param kwargs: Extra arguments may include level, spacing, gradient_direction
@@ -18,6 +19,34 @@ def area2mesh2(area,*args,**kwargs):
     area=np.array(np.stack([zero,area,zero],0),dtype=np.float)
     res = marching_cubes_classic(area,*args,**kwargs)
     return res
+
+def area2mesh_postprocess(res,axis=0,thresh=.01):
+    '''
+    area2mesh2 outputs a closed mesh, and this function turns into a single plane.
+    :param res: a closed mesh made up of vertices and faces(in np arrays)
+    :param axis: index of eliminated axis. Could change if you change the axis(in the np.stack line in area2mesh2).
+    :param thresh: Threshold of the value on the axis. Only SMALLER ones are reserved.
+    :return:
+    '''
+    v,f=res
+    mask = v[:, axis] < thresh
+    v0 = v[mask]
+    v0[:, axis] = 0
+    print(f'Points left: {v0.shape}')
+    remap_idx = {}
+    current_idx = 0
+    for i, m in enumerate(mask):
+        if m:
+            remap_idx[i] = current_idx
+            current_idx += 1
+
+    newf = []
+    for a, b, c in f:
+        flag = mask[a] & mask[b] & mask[c]
+        if flag:
+            newf.append([remap_idx[a], remap_idx[b], remap_idx[c]])
+    f0 = np.array(newf, dtype=np.int)
+    return v0,f0
 
 def enumerable2string(enu,split=' '):
     '''
