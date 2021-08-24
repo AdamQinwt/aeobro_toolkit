@@ -95,7 +95,7 @@ def writemesh(mesh,fname):
     with open(fname,'w') as fout:
         for kmain,vmain in mesh.items():
             for itm in vmain:
-                fout.write(f'{enumerable2string(itm)}\n')
+                fout.write(f'{kmain} {enumerable2string(itm)}\n')
 
 def gen_area(filename,func_isforeground=lambda x:x<254):
     '''
@@ -151,8 +151,13 @@ def scan_right(a):
     return r
 
 if __name__=='__main__':
-    area=gen_area('t6.bmp')
+    area=gen_area('t1.bmp')
     res=area2mesh2(area)
-    res=area2mesh_postprocess(res)
+    v, f, vn, val = res
+    x,y,z=v[:,0],v[:,1],v[:,2]
+    print(x.max(),x.min())
+    print(y.max(),y.min())
+    print(z.max(),z.min())
+    res=area2mesh_postprocess(res,thresh=1.0)
     v,f,vn,val=res
     writemesh({'v':v,'vn':vn,'f':f+1},'mesh.obj')
