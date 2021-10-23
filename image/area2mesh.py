@@ -151,13 +151,19 @@ def scan_right(a):
     return r
 
 if __name__=='__main__':
-    area=gen_area('t1.bmp')
+    root='E:/data/clothes/'
+    name='sleeve_close'
+    # sleeve:46.57,front:50.5,back:50.5
+    target_length=46.57
+    area=gen_area(root+name+'.bmp',lambda x:x>0)
     res=area2mesh2(area)
     v, f, vn, val = res
     x,y,z=v[:,0],v[:,1],v[:,2]
     print(x.max(),x.min())
     print(y.max(),y.min())
     print(z.max(),z.min())
-    res=area2mesh_postprocess(res,thresh=1.0)
+    margin=z.max()-z.min()
+    res=area2mesh_postprocess(res,thresh=1)
     v,f,vn,val=res
-    writemesh({'v':v,'vn':vn,'f':f+1},'mesh.obj')
+    v=v/margin*target_length
+    writemesh({'v':v,'vn':vn,'f':f+1},root+name+'.obj')
